@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TruePass – Passport Photo Maker</title>
+  <meta name="description" content="Make passport, visa and ID photos at home. True-to-size printing, no watermark, and your photo never leaves your PC.">
+  <meta name="theme-color" content="#1d4ed8">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+  <style id="pageRule"></style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><img src="icon-192.png" alt="" width="30" height="30"><span>TruePass</span></div>
+    <span class="tree-title"></span>
+    <div class="top-btns">
+      <button id="saveBtn" class="tb">💾 Save photo</button>
+      <button id="printBtn" class="tb">🖨 Print sheet <span class="badge pro-only">PRO</span></button>
+      <button id="moreBtn" class="tb">☰ More</button>
+      <button id="proBtn" class="pro-btn" hidden>★ Get Pro</button>
+    </div>
+    <div id="menu" class="menu" hidden>
+      <button id="saveSheetBtn">Save the print sheet as a picture <span class="badge pro-only">PRO</span></button>
+      <button id="newBtn">Start over with another photo</button>
+      <a href="mailto:thequan03072002@gmail.com?subject=TruePass%20feedback">✉ Feedback &amp; support</a>
+      <a href="https://apps.microsoft.com/detail/9NRR32J91340" target="_blank" rel="noopener">More apps: Kinleaf family tree maker</a>
+      <a href="https://apps.microsoft.com/detail/9NPWMMZ1NPPV" target="_blank" rel="noopener">More apps: PDF Toolbox</a>
+    </div>
+    <input id="fileIn" type="file" accept="image/*" hidden>
+  </header>
+
+  <main class="layout">
+    <aside class="left">
+      <h2>1 · Your photo</h2>
+      <div class="two">
+        <button id="openBtn" class="primary">Open a photo</button>
+        <button id="camBtn" class="ghost">Use camera</button>
+      </div>
+      <p id="resLine" class="hint"></p>
+
+      <h2>2 · Document</h2>
+      <label class="field">Photo for<select id="spec"></select></label>
+      <div class="two" id="customF" hidden>
+        <label class="field">Width (mm)<input id="cw" type="text" inputmode="decimal" maxlength="5"></label>
+        <label class="field">Height (mm)<input id="ch" type="text" inputmode="decimal" maxlength="5"></label>
+      </div>
+      <p id="specLine" class="hint"></p>
+
+      <h2>3 · Line up the face</h2>
+      <p class="legend">Drag the photo. Put the <b class="b">top of the hair</b> on the blue line and the <b class="g">chin</b> inside the green band.</p>
+      <label class="sl">Zoom<input id="zoom" type="range" min="0" max="1000" value="0"></label>
+      <label class="sl">Straighten<input id="rot" type="range" min="-150" max="150" value="0"></label>
+      <label class="sl">Brightness<input id="bri" type="range" min="60" max="150" value="100"></label>
+      <label class="sl">Contrast<input id="con" type="range" min="70" max="140" value="100"></label>
+      <label class="sl">Whiten the background<input id="white" type="range" min="0" max="100" value="0"></label>
+      <p class="hint">Whitening works best when the photo was taken in front of a plain, light wall.</p>
+      <label class="check"><input id="showGuides" type="checkbox" checked> Show the guide lines</label>
+
+      <h2>4 · Print sheet</h2>
+      <div class="two">
+        <label class="field">Paper<select id="paper"></select></label>
+        <label class="field">How many<select id="copies"><option value="0">Fill the page</option><option>2</option><option>4</option><option>6</option><option>8</option></select></label>
+      </div>
+      <div class="two" id="paperF" hidden>
+        <label class="field">Paper width (mm)<input id="pw" type="text" inputmode="decimal" maxlength="5"></label>
+        <label class="field">Paper height (mm)<input id="ph" type="text" inputmode="decimal" maxlength="5"></label>
+      </div>
+      <p id="sheetLine" class="hint"></p>
+    </aside>
+
+    <section class="stage">
+      <div class="tabs"><button id="tabPhoto" class="on">Photo</button><button id="tabSheet">Print sheet</button></div>
+      <div class="work">
+        <div id="empty" class="empty">
+          <h1>Passport photos, made at home</h1>
+          <button id="openBig" class="primary big">Open a photo</button>
+          <button id="camBig" class="ghost big">Use camera</button>
+          <ul class="promise">
+            <li>No watermark – ever</li>
+            <li>Prints at the true size, with a ruler to check</li>
+            <li>Your photo never leaves this PC</li>
+          </ul>
+        </div>
+        <div id="frame" hidden><canvas id="view"></canvas><svg id="guides"></svg></div>
+        <canvas id="sheetView" hidden></canvas>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="camDialog" class="dlg cam">
+    <h2>Take a photo</h2>
+    <p class="muted">Face the camera, neutral expression, plain light wall behind you.</p>
+    <video id="video" autoplay playsinline muted></video>
+    <div class="row-btns">
+      <button id="snapBtn" class="primary">Take photo</button>
+      <button id="camClose" class="ghost">Cancel</button>
+    </div>
+  </dialog>
+
+  <dialog id="proDialog" class="dlg">
+    <h2>TruePass Pro</h2>
+    <p class="muted">One-time purchase. Yours forever on this Microsoft account. Saving a single photo is always free and never has a watermark.</p>
+    <ul class="pro-list">
+      <li><strong>Print sheets</strong> – many photos on one page, at the true size, with cut lines</li>
+      <li><strong>Save the sheet as a picture</strong> to print at a photo kiosk or shop</li>
+      <li><strong>Any paper size</strong> and <strong>any photo size</strong> you type in</li>
+    </ul>
+    <p id="proMsg" class="pro-msg" hidden></p>
+    <div class="row-btns">
+      <button id="buyBtn" class="primary">Unlock Pro</button>
+      <button id="restoreBtn" class="ghost">Restore purchase</button>
+      <button id="closePro" class="ghost">Not now</button>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+  <div id="printArea"></div>
+  <script src="app.js"></script>
+</body>
+</html>
