@@ -142,3 +142,15 @@ textarea { min-height: 70px; resize: vertical; }
 .legend { font-size: 13px; color: var(--muted); margin: 0; line-height: 1.6; }
 .legend b.g { color: #15803d; } .legend b.b { color: #2563eb; }
 .cam video { width: 100%; border-radius: 10px; background: #000; transform: scaleX(-1); }
+
+/* AI tools */
+.tip { background: var(--accent-2, #dbeafe); color: var(--text); border-radius: 8px; padding: 6px 9px; }
+.ai-status { color: var(--accent); font-weight: 600; }
+.checks { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.ck-head { font-weight: 700; margin: 2px 0 4px; }
+.ck { margin: 0; padding: 6px 9px; border-radius: 8px; display: flex; flex-direction: column; gap: 1px; font-size: 13px; border-left: 4px solid; }
+.ck b { font-size: 13.5px; }
+.ck span { color: var(--muted); }
+.ck.ok { border-color: #16a34a; background: color-mix(in srgb, #16a34a 9%, transparent); }
+.ck.warn { border-color: #d97706; background: color-mix(in srgb, #d97706 10%, transparent); }
+.ck.bad { border-color: #dc2626; background: color-mix(in srgb, #dc2626 10%, transparent); }

@@ -80,14 +80,14 @@ function needsPro(reason) {
 
 // ---------- document sizes (mm). head = chin to top of hair; top = gap above the hair ----------
 const SPECS = [
-  { id: 'us', name: 'United States – passport / visa (2 × 2 in)', w: 50.8, h: 50.8, head: [25, 35], top: 5, px: [1200, 1200] },
-  { id: 'eu', name: 'Europe / Schengen – passport, ID, visa (35 × 45 mm)', w: 35, h: 45, head: [32, 36], top: 4 },
-  { id: 'uk', name: 'United Kingdom – passport (35 × 45 mm)', w: 35, h: 45, head: [29, 34], top: 5 },
-  { id: 'ca', name: 'Canada – passport (50 × 70 mm)', w: 50, h: 70, head: [31, 36], top: 12 },
-  { id: 'au', name: 'Australia – passport (35 × 45 mm)', w: 35, h: 45, head: [32, 36], top: 4 },
-  { id: 'in', name: 'India – passport / OCI (2 × 2 in)', w: 50.8, h: 50.8, head: [25, 35], top: 5 },
-  { id: 'cn', name: 'China – visa (33 × 48 mm)', w: 33, h: 48, head: [28, 33], top: 5 },
-  { id: 'jp', name: 'Japan – passport (35 × 45 mm)', w: 35, h: 45, head: [32, 36], top: 4 },
+  { id: 'us', name: 'United States – passport / visa (2 × 2 in)', w: 50.8, h: 50.8, head: [25, 35], top: 5, px: [1200, 1200], bg: '#ffffff', tip: 'White or off-white background. No glasses. Neutral face, both eyes open, taken in the last 6 months.' },
+  { id: 'eu', name: 'Europe / Schengen – passport, ID, visa (35 × 45 mm)', w: 35, h: 45, head: [32, 36], top: 4, bg: '#f0f0f0', tip: 'Plain light background (white, light grey or light blue, depending on the country). Neutral face, mouth closed, eyes open.' },
+  { id: 'uk', name: 'United Kingdom – passport (35 × 45 mm)', w: 35, h: 45, head: [29, 34], top: 5, bg: '#e8e8e8', tip: 'Plain cream or light grey background. Neutral face, mouth closed, no glasses glare or shadows.' },
+  { id: 'ca', name: 'Canada – passport (50 × 70 mm)', w: 50, h: 70, head: [31, 36], top: 12, bg: '#ffffff', tip: 'Plain white or light-coloured background. Neutral face, mouth closed. A guarantor may need to sign the back.' },
+  { id: 'au', name: 'Australia – passport (35 × 45 mm)', w: 35, h: 45, head: [32, 36], top: 4, bg: '#f0f0f0', tip: 'Plain white or light grey background. Neutral face, mouth closed, no glasses.' },
+  { id: 'in', name: 'India – passport / OCI (2 × 2 in)', w: 50.8, h: 50.8, head: [25, 35], top: 5, bg: '#ffffff', tip: 'Plain white background. Face the camera, eyes open, ears visible where possible.' },
+  { id: 'cn', name: 'China – visa (33 × 48 mm)', w: 33, h: 48, head: [28, 33], top: 5, bg: '#ffffff', tip: 'White background. Bare head, ears and eyebrows visible, no glasses.' },
+  { id: 'jp', name: 'Japan – passport (35 × 45 mm)', w: 35, h: 45, head: [32, 36], top: 4, bg: '#f0f0f0', tip: 'Plain background without patterns or shadows. Face the front, no hat.' },
   { id: 'g3545', name: 'Standard 35 × 45 mm', w: 35, h: 45, head: [30, 36], top: 4 },
   { id: 'g4060', name: 'Standard 40 × 60 mm (4 × 6 cm)', w: 40, h: 60, head: [36, 44], top: 6 },
   { id: 'g3040', name: 'Standard 30 × 40 mm (3 × 4 cm)', w: 30, h: 40, head: [25, 30], top: 4 },
@@ -124,6 +124,8 @@ function paper() {
 let img = null;            // ImageBitmap or canvas
 let t = { z: 1, ox: 0, oy: 0, rot: 0, bri: 100, con: 100, white: 0 }; // z = mm per image pixel, ox/oy = image centre offset in mm
 let tab = 'photo';
+let cut = null, useCut = false; // the photo with the background removed (alpha), Pro
+let bgColor = '#ffffff';
 const minZoom = () => { const s = spec(); return Math.max(s.w / img.width, s.h / img.height); };
 function resetPlacement() { t = { z: minZoom(), ox: 0, oy: 0, rot: 0, bri: 100, con: 100, white: 0 }; }
 function clampPlacement() {
@@ -157,13 +159,14 @@ function whiten(ctx, W, H, amount) {
 function renderPhoto(W, H) { // the finished photo at W × H pixels – nothing else is ever drawn on it
   const s = spec(), c = document.createElement('canvas'); c.width = W; c.height = H;
   const ctx = c.getContext('2d', { willReadFrequently: true }), ppm = W / s.w;
-  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+  const withCut = useCut && cut;
+  ctx.fillStyle = withCut ? bgColor : '#fff'; ctx.fillRect(0, 0, W, H);
   ctx.imageSmoothingQuality = 'high';
   ctx.filter = `brightness(${t.bri}%) contrast(${t.con}%)`;
   ctx.translate(W / 2 + t.ox * ppm, H / 2 + t.oy * ppm); ctx.rotate(t.rot * Math.PI / 180); ctx.scale(t.z * ppm, t.z * ppm);
-  ctx.drawImage(img, -img.width / 2, -img.height / 2);
+  ctx.drawImage(withCut ? cut : img, -img.width / 2, -img.height / 2);
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.filter = 'none';
-  whiten(ctx, W, H, t.white);
+  if (!withCut) whiten(ctx, W, H, t.white);
   return c;
 }
 function photoPixels() { const s = spec(); return s.px ? s.px : [Math.round(s.w * PHOTO_PPM), Math.round(s.h * PHOTO_PPM)]; }
@@ -243,6 +246,8 @@ function renderAll() {
   if (document.activeElement !== $('cw')) $('cw').value = st.cw; if (document.activeElement !== $('ch')) $('ch').value = st.ch;
   if (document.activeElement !== $('pw')) $('pw').value = st.pw; if (document.activeElement !== $('ph')) $('ph').value = st.ph;
   const [pxw, pxh] = photoPixels();
+  $('tipLine').textContent = s.tip ? 'Rules for this photo: ' + s.tip : '';
+  $('useCut').checked = useCut; $('cutRow').hidden = !cut; $('bgRow').hidden = !cut || !useCut; $('bgColor').value = bgColor; $('whiteRow').hidden = !!(cut && useCut);
   $('specLine').textContent = `${s.w} × ${s.h} mm (${fmtIn(s.w)} × ${fmtIn(s.h)} in). Head, chin to hair: ${Math.round(s.head[0])}–${Math.round(s.head[1])} mm. Saved as ${pxw} × ${pxh} pixels. Rules change – please check the official requirements for your document.`;
   const L = sheetLayout();
   $('sheetLine').textContent = L.n ? `${L.n} photo${L.n > 1 ? 's' : ''} on this paper. When you print, choose “Actual size” or Scale 100%, then measure ${L.ruler ? 'the check line' : `one photo (it must be ${s.w} mm wide)`} with a ruler.` : 'This photo size does not fit on this paper.';
@@ -263,13 +268,15 @@ async function setImage(source) {
     const k = 5000 / Math.max(bmp.width, bmp.height), c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
     const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(bmp, 0, 0, c.width, c.height); bmp = c;
   }
-  img = bmp; tab = 'photo'; resetPlacement(); renderAll();
+  img = bmp; cut = null; useCut = false; face = null; tab = 'photo'; resetPlacement(); renderAll(); renderChecks(null);
+  autoFit(true);
 }
 
 // ---------- actions ----------
 async function savePhoto() {
   if (!img) { toast('Open a photo first.'); return; }
   if (spec().custom && needsPro('Your own photo size is part of Pro. The standard sizes are free.')) return;
+  if (useCut && cut && needsPro('The new background is part of Pro. Untick “Use the new background” to save this photo for free.')) return;
   const [w, h] = photoPixels(), s = spec();
   download(await jpegBlob(renderPhoto(w, h), Math.round(w / s.w * 25.4)), `passport-photo-${s.w}x${s.h}mm.jpg`);
 }
@@ -303,6 +310,184 @@ function snap() {
   closeCam(); setImage(c);
 }
 
+// ---------- on-device AI: face finder, auto-fit, photo check, background removal ----------
+// Everything runs on this PC. The AI files are downloaded once and then cached.
+const TFJS = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
+const MPV = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+const FACE_MODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+let faceLm = null, face = null; // face = { pts (image pixels), bs, w, h }
+async function getFaceLm() {
+  if (faceLm) return faceLm;
+  const V = await import(MPV);
+  const fs = await V.FilesetResolver.forVisionTasks(MPV + '/wasm');
+  faceLm = await V.FaceLandmarker.createFromOptions(fs, { baseOptions: { modelAssetPath: FACE_MODEL, delegate: 'CPU' }, runningMode: 'IMAGE', numFaces: 2, outputFaceBlendshapes: true });
+  return faceLm;
+}
+function toCanvas(src, maxSide) {
+  const k = Math.min(1, maxSide / Math.max(src.width, src.height)), c = document.createElement('canvas');
+  c.width = Math.round(src.width * k); c.height = Math.round(src.height * k);
+  c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+  return c;
+}
+async function findFace(src) { // landmarks in the source's own pixels
+  const lm = await getFaceLm(), c = toCanvas(src, 1600), r = lm.detect(c);
+  if (!r.faceLandmarks.length) return { count: 0 };
+  const sx = src.width, sy = src.height;
+  // the biggest face wins
+  let best = 0, area = 0;
+  r.faceLandmarks.forEach((L, i) => { const a = (L[454].x - L[234].x) * (L[152].y - L[10].y); if (a > area) { area = a; best = i; } });
+  const L = r.faceLandmarks[best];
+  const bs = {}; (r.faceBlendshapes[best] ? r.faceBlendshapes[best].categories : []).forEach((c2) => (bs[c2.categoryName] = c2.score));
+  return { count: r.faceLandmarks.length, pts: L.map((p) => ({ x: p.x * sx, y: p.y * sy })), bs, w: sx, h: sy };
+}
+// top of the hair: from the cut-out mask when we have one, otherwise estimated from the forehead
+function crownY(f, src) {
+  const P = f.pts, chin = P[152], fh = P[10];
+  const guess = fh.y - (chin.y - fh.y) * 0.36;
+  if (!cut) return guess;
+  const c = toCanvas(cut, 900), k = c.width / src.width, d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+  const x0 = Math.max(0, Math.round(P[234].x * k)), x1 = Math.min(c.width - 1, Math.round(P[454].x * k));
+  const yStart = Math.max(0, Math.round((fh.y - (chin.y - fh.y)) * k)), yEnd = Math.round(fh.y * k);
+  for (let y = yStart; y < yEnd; y++) {
+    let n = 0; for (let x = x0; x <= x1; x += 2) if (d[(y * c.width + x) * 4 + 3] > 140) n++;
+    if (n > (x1 - x0) / 2 * 0.12) return y / k;
+  }
+  return guess;
+}
+const rotP = (p, cx, cy, a) => { const s = Math.sin(a), c = Math.cos(a), dx = p.x - cx, dy = p.y - cy; return { x: dx * c - dy * s, y: dx * s + dy * c }; };
+let fitting = false;
+async function autoFit(quiet) {
+  if (!img || fitting) return;
+  fitting = true; aiStatus('Finding the face…');
+  try {
+    if (!face) face = await findFace(img);
+    if (!face.count) { aiStatus(''); renderChecks({ noFace: true }); if (!quiet) toast('No face was found. Use a clear photo facing the camera.'); return; }
+    const P = face.pts, eL = P[33], eR = P[263];
+    const ang = Math.atan2(eR.y - eL.y, eR.x - eL.x); // tilt of the eyes
+    t.rot = Math.max(-15, Math.min(15, -ang * 180 / Math.PI));
+    const a = t.rot * Math.PI / 180, cx = img.width / 2, cy = img.height / 2;
+    const chin = rotP(P[152], cx, cy, a), crown = rotP({ x: (eL.x + eR.x) / 2, y: crownY(face, img) }, cx, cy, a), mid = rotP({ x: (eL.x + eR.x) / 2, y: (eL.y + eR.y) / 2 }, cx, cy, a);
+    const s = spec(), headMm = (s.head[0] + s.head[1]) / 2;
+    t.z = headMm / Math.max(1, chin.y - crown.y);
+    t.ox = -t.z * mid.x;
+    t.oy = s.top - s.h / 2 - t.z * crown.y;
+    clampPlacement(); renderAll();
+    aiStatus('');
+    await checkPhoto(true);
+    if (!quiet) toast('The face is lined up. Fine-tune it by dragging if you like.');
+  } catch (e) {
+    aiStatus('The face finder could not start (it needs internet the first time).');
+  } finally { fitting = false; }
+}
+function aiStatus(text) { $('aiStatus').textContent = text || ''; $('aiStatus').hidden = !text; }
+
+// ---- photo check ----
+function lum(d, i) { return 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; }
+async function checkPhoto(quiet) {
+  if (!img) return;
+  const s = spec(), H = 900, W = Math.round(H * s.w / s.h), ppm = H / s.h;
+  const pic = renderPhoto(W, H);
+  let f;
+  try { f = await findFace(pic); } catch (_) { if (!quiet) toast('The photo check could not start (it needs internet the first time).'); return; }
+  const res = [];
+  if (!f.count) { renderChecks({ noFace: true }); return; }
+  const P = f.pts, chin = P[152], eL = P[33], eR = P[263];
+  if (f.count > 1) res.push(['warn', 'More than one face', 'Only you should be in the photo.']);
+  // head size: crown from the cut-out, or estimated
+  let crown;
+  if (cut && useCut) {
+    const d = pic.getContext('2d').getImageData(0, 0, W, H).data, x0 = Math.round(P[234].x), x1 = Math.round(P[454].x);
+    const bg = [parseInt(bgColor.slice(1, 3), 16), parseInt(bgColor.slice(3, 5), 16), parseInt(bgColor.slice(5, 7), 16)];
+    crown = P[10].y - (chin.y - P[10].y) * 0.36;
+    for (let y = 0; y < P[10].y; y++) { let n = 0; for (let x = x0; x <= x1; x += 2) { const i = (y * W + x) * 4; if (Math.abs(d[i] - bg[0]) + Math.abs(d[i + 1] - bg[1]) + Math.abs(d[i + 2] - bg[2]) > 40) n++; } if (n > (x1 - x0) / 2 * 0.12) { crown = y; break; } }
+  } else crown = P[10].y - (chin.y - P[10].y) * 0.36;
+  const headMm = (chin.y - crown) / ppm, topMm = crown / ppm;
+  const okHead = headMm >= s.head[0] - 0.5 && headMm <= s.head[1] + 0.5;
+  res.push([okHead ? 'ok' : 'bad', `Head size ${headMm.toFixed(1)} mm`, okHead ? `Needs ${Math.round(s.head[0])}–${Math.round(s.head[1])} mm, chin to top of hair.` : `Needs ${Math.round(s.head[0])}–${Math.round(s.head[1])} mm – use Zoom${headMm < s.head[0] ? ' to make the head bigger' : ' to make the head smaller'}.`]);
+  const okTop = topMm > 1;
+  if (!okTop) res.push(['bad', 'No space above the head', 'Move the photo down a little.']);
+  const offX = ((eL.x + eR.x) / 2 - W / 2) / ppm, okC = Math.abs(offX) < 1.5;
+  res.push([okC ? 'ok' : 'warn', 'Face in the middle', okC ? 'Centred left to right.' : `Move the photo ${offX > 0 ? 'left' : 'right'} by about ${Math.abs(offX).toFixed(1)} mm.`]);
+  const tilt = Math.atan2(eR.y - eL.y, eR.x - eL.x) * 180 / Math.PI, okT = Math.abs(tilt) < 2.5;
+  res.push([okT ? 'ok' : 'warn', 'Head straight', okT ? 'Eyes are level.' : `The head leans ${Math.abs(tilt).toFixed(1)}° – use Straighten.`]);
+  const nose = P[1], cheekL = P[234], cheekR = P[454], yaw = ((nose.x - cheekL.x) - (cheekR.x - nose.x)) / (cheekR.x - cheekL.x), okY = Math.abs(yaw) < 0.18;
+  res.push([okY ? 'ok' : 'warn', 'Looking straight at the camera', okY ? 'Face is turned to the front.' : 'The face is turned to one side – take a new photo facing the camera.']);
+  const blink = Math.max(f.bs.eyeBlinkLeft || 0, f.bs.eyeBlinkRight || 0), okE = blink < 0.45;
+  res.push([okE ? 'ok' : 'bad', 'Eyes open', okE ? 'Both eyes are open.' : 'An eye looks closed – take a new photo.']);
+  const smile = Math.max(f.bs.mouthSmileLeft || 0, f.bs.mouthSmileRight || 0), jaw = f.bs.jawOpen || 0, okM = smile < 0.45 && jaw < 0.25;
+  res.push([okM ? 'ok' : 'warn', 'Neutral expression', okM ? 'Mouth closed, no big smile.' : 'Most passports need a neutral face with the mouth closed.']);
+  // background: corners above the shoulders
+  const d = pic.getContext('2d').getImageData(0, 0, W, H).data, vals = [];
+  const box = (x0, y0, x1, y1) => { for (let y = y0; y < y1; y += 3) for (let x = x0; x < x1; x += 3) vals.push(lum(d, (y * W + x) * 4)); };
+  box(2, 2, Math.round(W * 0.16), Math.round(H * 0.3)); box(Math.round(W * 0.84), 2, W - 2, Math.round(H * 0.3));
+  const mean = vals.reduce((a, b) => a + b, 0) / vals.length, sd = Math.sqrt(vals.reduce((a, b) => a + (b - mean) * (b - mean), 0) / vals.length);
+  const okB = mean > 185 && sd < 18;
+  res.push([okB ? 'ok' : 'warn', 'Plain, light background', okB ? 'The background is light and even.' : mean <= 185 ? (cut ? 'Tick “Use the new background”.' : 'The background is too dark – try ✨ Remove background or Whiten.') : 'The background is not even – try ✨ Remove background.']);
+  // lighting: left vs right cheek
+  const cheek = (p) => { let t2 = 0, n = 0; for (let y = -6; y <= 6; y += 2) for (let x = -6; x <= 6; x += 2) { const xx = Math.round(p.x + x), yy = Math.round(p.y + y); if (xx >= 0 && yy >= 0 && xx < W && yy < H) { t2 += lum(d, (yy * W + xx) * 4); n++; } } return t2 / Math.max(1, n); };
+  const cl = cheek(P[50]), cr = cheek(P[280]), diff = Math.abs(cl - cr) / Math.max(cl, cr), okL = diff < 0.22;
+  res.push([okL ? 'ok' : 'warn', 'Even light on the face', okL ? 'No strong shadow on one side.' : 'One side of the face is darker – face a window or a lamp.']);
+  const srcDpi = 25.4 / t.z, okR = srcDpi >= 250;
+  res.push([okR ? 'ok' : 'warn', 'Sharp enough to print', okR ? 'The photo has enough pixels.' : 'The photo is small and may print soft.']);
+  renderChecks({ list: res });
+}
+function renderChecks(r) {
+  const box = $('checks');
+  if (!r) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  if (r.noFace) { box.innerHTML = '<p class="ck bad"><b>✗ No face found</b><span>Use a clear photo of one person facing the camera.</span></p>'; return; }
+  const bad = r.list.filter((x) => x[0] !== 'ok').length;
+  box.innerHTML = `<p class="ck-head">${bad ? `⚠ ${bad} thing${bad > 1 ? 's' : ''} to check` : '✓ Looks good for most passports'}</p>` +
+    r.list.map(([k, a, b]) => `<p class="ck ${k}"><b>${k === 'ok' ? '✓' : k === 'bad' ? '✗' : '!'} ${esc(a)}</b><span>${esc(b)}</span></p>`).join('') +
+    '<p class="hint">This is a helpful check, not an official approval. Rules differ by country – check them before you apply.</p>';
+}
+
+// ---- background removal (MODNet portrait matting) ----
+let matting = null;
+async function getMatting() {
+  if (matting) return matting;
+  const T = await import(TFJS);
+  T.env.allowLocalModels = false;
+  const progress_callback = (p) => { if (p.status === 'progress' && p.total > 1e6) aiStatus(`Getting the background remover ready (first time only) · ${Math.round(p.loaded / 1048576)} of ${Math.round(p.total / 1048576)} MB`); };
+  const model = await T.AutoModel.from_pretrained('Xenova/modnet', { dtype: 'fp32', device: 'wasm', progress_callback });
+  const proc = await T.AutoProcessor.from_pretrained('Xenova/modnet');
+  matting = { T, model, proc };
+  return matting;
+}
+let cutting = false;
+async function removeBackground() {
+  if (!img || cutting) return;
+  cutting = true; $('cutBtn').disabled = true;
+  try {
+    aiStatus('Removing the background…');
+    const { T, model, proc } = await getMatting();
+    aiStatus('Removing the background…');
+    const src = toCanvas(img, 2000);
+    const image = T.RawImage.fromCanvas ? await T.RawImage.fromCanvas(src) : await T.RawImage.fromURL(src.toDataURL('image/jpeg', 0.95));
+    const { pixel_values } = await proc(image);
+    const out = await model({ input: pixel_values });
+    const o = out.output || out[Object.keys(out)[0]];
+    const mask = await T.RawImage.fromTensor(o[0].mul(255).to('uint8')).resize(img.width, img.height);
+    const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+    const x = c.getContext('2d'); x.drawImage(img, 0, 0);
+    const id = x.getImageData(0, 0, c.width, c.height), d = id.data, m = mask.data, ch = mask.channels || 1;
+    for (let i = 0, j = 0; i < d.length; i += 4, j += ch) {
+      let a = m[j];
+      a = a < 20 ? 0 : a > 235 ? 255 : Math.round((a - 20) / 215 * 255); // firmer edges
+      d[i + 3] = a;
+    }
+    x.putImageData(id, 0, 0);
+    cut = c; useCut = true;
+    const s = spec(); if (s.bg) bgColor = s.bg;
+    aiStatus('');
+    renderAll();
+    if (face) await checkPhoto(true);
+    toast(unlocked() ? 'Background replaced.' : 'Background replaced – this is a Pro feature. Untick “Use the new background” to save for free.');
+  } catch (e) {
+    aiStatus('The background remover could not start (it needs internet the first time).');
+  } finally { cutting = false; $('cutBtn').disabled = false; }
+}
+
 // ---------- events ----------
 SPECS.forEach((s) => $('spec').add(new Option(s.name, s.id)));
 PAPERS.forEach((p) => $('paper').add(new Option(p.name, p.id)));
@@ -310,7 +495,7 @@ const pick = () => { const i = $('fileIn'); i.value = ''; i.onchange = () => { i
 $('openBtn').onclick = $('openBig').onclick = pick;
 $('camBtn').onclick = $('camBig').onclick = openCam;
 $('snapBtn').onclick = snap; $('camClose').onclick = closeCam; $('camDialog').addEventListener('close', closeCam);
-$('spec').onchange = () => { st.spec = $('spec').value; saveSt(); if (img) { t.z = Math.max(t.z, minZoom()); } renderAll(); };
+$('spec').onchange = () => { st.spec = $('spec').value; saveSt(); const s = spec(); if (s.bg) bgColor = s.bg; if (img) { t.z = Math.max(t.z, minZoom()); if (face) autoFit(false); } renderAll(); };
 $('paper').onchange = () => { st.paper = $('paper').value; saveSt(); renderAll(); };
 $('copies').onchange = () => { st.copies = Number($('copies').value); saveSt(); renderAll(); };
 [['cw', 'cw'], ['ch', 'ch'], ['pw', 'pw'], ['ph', 'ph']].forEach(([id, k]) => { $(id).oninput = () => { st[k] = $(id).value; saveSt(); renderAll(); }; });
@@ -332,6 +517,15 @@ fr.addEventListener('wheel', (e) => { e.preventDefault(); const k = e.deltaY < 0
 document.addEventListener('dragover', (e) => e.preventDefault());
 document.addEventListener('drop', (e) => { e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) setImage(f); });
 window.addEventListener('resize', () => { if (img) draw(); });
+$('fitBtn').onclick = () => autoFit(false);
+$('checkBtn').onclick = () => checkPhoto(false);
+$('cutBtn').onclick = removeBackground;
+$('useCut').onchange = () => { useCut = $('useCut').checked; renderAll(); if (face) checkPhoto(true); };
+$('bgColor').onchange = () => { bgColor = $('bgColor').value; draw(); };
+let checkTimer = 0;
+const recheck = () => { if (!face) return; clearTimeout(checkTimer); checkTimer = setTimeout(() => checkPhoto(true), 700); };
+['zoom', 'rot', 'bri', 'con', 'white'].forEach((id) => $(id).addEventListener('change', recheck));
+fr.addEventListener('pointerup', recheck); fr.addEventListener('wheel', recheck);
 $('saveBtn').onclick = savePhoto; $('printBtn').onclick = printSheet; $('saveSheetBtn').onclick = saveSheet;
 $('newBtn').onclick = () => { img = null; tab = 'photo'; renderAll(); };
 $('moreBtn').onclick = (e) => { e.stopPropagation(); $('menu').hidden = !$('menu').hidden; };

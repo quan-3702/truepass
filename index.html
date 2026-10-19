@@ -24,7 +24,6 @@
     <div id="menu" class="menu" hidden>
       <button id="saveSheetBtn">Save the print sheet as a picture <span class="badge pro-only">PRO</span></button>
       <button id="newBtn">Start over with another photo</button>
-      <a href="help.html" target="_blank" rel="noopener">❓ How to use TruePass</a>
       <a href="mailto:thequan03072002@gmail.com?subject=TruePass%20feedback">✉ Feedback &amp; support</a>
       <a href="https://apps.microsoft.com/detail/9NRR32J91340" target="_blank" rel="noopener">More apps: Kinleaf family tree maker</a>
       <a href="https://apps.microsoft.com/detail/9NPWMMZ1NPPV" target="_blank" rel="noopener">More apps: PDF Toolbox</a>
@@ -48,16 +47,32 @@
         <label class="field">Height (mm)<input id="ch" type="text" inputmode="decimal" maxlength="5"></label>
       </div>
       <p id="specLine" class="hint"></p>
+      <p id="tipLine" class="hint tip"></p>
 
       <h2>3 · Line up the face</h2>
-      <p class="legend">Drag the photo. Put the <b class="b">top of the hair</b> on the blue line and the <b class="g">chin</b> inside the green band.</p>
+      <div class="two">
+        <button id="fitBtn" class="primary">🎯 Auto-fit face</button>
+        <button id="cutBtn" class="ghost">✨ Remove background <span class="badge pro-only">PRO</span></button>
+      </div>
+      <p id="aiStatus" class="hint ai-status" hidden></p>
+      <label id="cutRow" class="check" hidden><input id="useCut" type="checkbox" checked> Use the new background</label>
+      <label id="bgRow" class="field" hidden>Background colour<select id="bgColor">
+        <option value="#ffffff">White</option><option value="#f5f5f0">Off-white</option><option value="#f0f0f0">Very light grey</option><option value="#e8e8e8">Light grey</option><option value="#f3ecdc">Cream</option><option value="#dce9f5">Light blue</option>
+      </select></label>
+      <p class="legend">Or drag the photo yourself. Put the <b class="b">top of the hair</b> on the blue line and the <b class="g">chin</b> inside the green band.</p>
       <label class="sl">Zoom<input id="zoom" type="range" min="0" max="1000" value="0"></label>
       <label class="sl">Straighten<input id="rot" type="range" min="-150" max="150" value="0"></label>
       <label class="sl">Brightness<input id="bri" type="range" min="60" max="150" value="100"></label>
       <label class="sl">Contrast<input id="con" type="range" min="70" max="140" value="100"></label>
-      <label class="sl">Whiten the background<input id="white" type="range" min="0" max="100" value="0"></label>
-      <p class="hint">Whitening works best when the photo was taken in front of a plain, light wall.</p>
+      <div id="whiteRow">
+        <label class="sl">Whiten the background<input id="white" type="range" min="0" max="100" value="0"></label>
+        <p class="hint">Whitening works best when the photo was taken in front of a plain, light wall.</p>
+      </div>
       <label class="check"><input id="showGuides" type="checkbox" checked> Show the guide lines</label>
+
+      <h2>Photo check</h2>
+      <button id="checkBtn" class="ghost">✓ Check my photo</button>
+      <div id="checks" class="checks" hidden></div>
 
       <h2>4 · Print sheet</h2>
       <div class="two">
@@ -106,6 +121,7 @@
     <ul class="pro-list">
       <li><strong>Print sheets</strong> – many photos on one page, at the true size, with cut lines</li>
       <li><strong>Save the sheet as a picture</strong> to print at a photo kiosk or shop</li>
+      <li><strong>Automatic background removal</strong> – a clean white, grey or blue background in one click</li>
       <li><strong>Any paper size</strong> and <strong>any photo size</strong> you type in</li>
     </ul>
     <p id="proMsg" class="pro-msg" hidden></p>
