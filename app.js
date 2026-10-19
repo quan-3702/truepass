@@ -126,11 +126,12 @@ let t = { z: 1, ox: 0, oy: 0, rot: 0, bri: 100, con: 100, white: 0 }; // z = mm 
 let tab = 'photo';
 let cut = null, useCut = false; // the photo with the background removed (alpha), Pro
 let bgColor = '#ffffff';
-const minZoom = () => { const s = spec(); return Math.max(s.w / img.width, s.h / img.height); };
-function resetPlacement() { t = { z: minZoom(), ox: 0, oy: 0, rot: 0, bri: 100, con: 100, white: 0 }; }
+const coverZoom = () => { const s = spec(); return Math.max(s.w / img.width, s.h / img.height); };
+const minZoom = () => coverZoom() * 0.45; // zooming out further than the photo is allowed (gaps get the background colour)
+function resetPlacement() { t = { z: coverZoom(), ox: 0, oy: 0, rot: 0, bri: 100, con: 100, white: 0 }; }
 function clampPlacement() {
-  const s = spec(); t.z = Math.max(minZoom(), Math.min(minZoom() * 8, t.z));
-  const mx = Math.max(0, (img.width * t.z - s.w) / 2), my = Math.max(0, (img.height * t.z - s.h) / 2);
+  const s = spec(); t.z = Math.max(minZoom(), Math.min(coverZoom() * 8, t.z));
+  const mx = Math.abs(img.width * t.z - s.w) / 2 + (img.width * t.z < s.w ? 0 : 0), my = Math.abs(img.height * t.z - s.h) / 2 + s.h * 0.25;
   t.ox = Math.max(-mx, Math.min(mx, t.ox)); t.oy = Math.max(-my, Math.min(my, t.oy));
 }
 
@@ -255,7 +256,7 @@ function renderAll() {
     clampPlacement();
     const srcDpi = 25.4 / t.z;
     $('resLine').textContent = srcDpi < 250 ? `This photo is small (${img.width} × ${img.height}). It may look soft when printed – zoom out or use a larger photo.` : `${img.width} × ${img.height} pixels – sharp enough.`;
-    $('zoom').value = String(Math.round(Math.log(t.z / minZoom()) / Math.log(8) * 1000));
+    $('zoom').value = String(Math.round(Math.log(t.z / minZoom()) / Math.log(8 / 0.45) * 1000));
     $('rot').value = String(Math.round(t.rot * 10)); $('bri').value = String(t.bri); $('con').value = String(t.con); $('white').value = String(t.white);
     draw();
   } else $('resLine').textContent = 'Tip: stand about 1.5 m from the camera, facing a window, in front of a plain light wall.';
@@ -427,9 +428,18 @@ async function checkPhoto(quiet) {
   const cheek = (p) => { let t2 = 0, n = 0; for (let y = -6; y <= 6; y += 2) for (let x = -6; x <= 6; x += 2) { const xx = Math.round(p.x + x), yy = Math.round(p.y + y); if (xx >= 0 && yy >= 0 && xx < W && yy < H) { t2 += lum(d, (yy * W + xx) * 4); n++; } } return t2 / Math.max(1, n); };
   const cl = cheek(P[50]), cr = cheek(P[280]), diff = Math.abs(cl - cr) / Math.max(cl, cr), okL = diff < 0.22;
   res.push([okL ? 'ok' : 'warn', 'Even light on the face', okL ? 'No strong shadow on one side.' : 'One side of the face is darker – face a window or a lamp.']);
+  if (!(cut && useCut) && !photoCovers()) res.push(['warn', 'Gaps at the edge', 'The photo does not fill the frame – use ✨ Remove background to fill it with a plain colour, or zoom in.']);
   const srcDpi = 25.4 / t.z, okR = srcDpi >= 250;
   res.push([okR ? 'ok' : 'warn', 'Sharp enough to print', okR ? 'The photo has enough pixels.' : 'The photo is small and may print soft.']);
   renderChecks({ list: res });
+}
+function photoCovers() { // do all four corners of the frame land inside the photo?
+  const s = spec(), a = -t.rot * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+  return [[-1, -1], [1, -1], [1, 1], [-1, 1]].every(([kx, ky]) => {
+    const X = kx * s.w / 2 - t.ox, Y = ky * s.h / 2 - t.oy;
+    const u = (X * c - Y * sn) / t.z, v = (X * sn + Y * c) / t.z;
+    return Math.abs(u) <= img.width / 2 + 0.5 && Math.abs(v) <= img.height / 2 + 0.5;
+  });
 }
 function renderChecks(r) {
   const box = $('checks');
@@ -500,7 +510,7 @@ $('paper').onchange = () => { st.paper = $('paper').value; saveSt(); renderAll()
 $('copies').onchange = () => { st.copies = Number($('copies').value); saveSt(); renderAll(); };
 [['cw', 'cw'], ['ch', 'ch'], ['pw', 'pw'], ['ph', 'ph']].forEach(([id, k]) => { $(id).oninput = () => { st[k] = $(id).value; saveSt(); renderAll(); }; });
 $('showGuides').onchange = () => { st.guides = $('showGuides').checked; saveSt(); draw(); };
-$('zoom').oninput = () => { if (!img) return; const z = minZoom() * Math.pow(8, $('zoom').value / 1000), k = z / t.z; t.z = z; t.ox *= k; t.oy *= k; clampPlacement(); draw(); };
+$('zoom').oninput = () => { if (!img) return; const z = minZoom() * Math.pow(8 / 0.45, $('zoom').value / 1000), k = z / t.z; t.z = z; t.ox *= k; t.oy *= k; clampPlacement(); draw(); };
 $('rot').oninput = () => { t.rot = $('rot').value / 10; draw(); };
 $('bri').oninput = () => { t.bri = Number($('bri').value); draw(); };
 $('con').oninput = () => { t.con = Number($('con').value); draw(); };
@@ -513,7 +523,7 @@ fr.addEventListener('pointerdown', (e) => { dragAt = [e.clientX, e.clientY]; fr.
 fr.addEventListener('pointermove', (e) => { if (!dragAt) return; const k = spec().h / fr.clientHeight; t.ox += (e.clientX - dragAt[0]) * k; t.oy += (e.clientY - dragAt[1]) * k; dragAt = [e.clientX, e.clientY]; clampPlacement(); draw(); });
 const endDrag = () => { dragAt = null; fr.classList.remove('drag'); };
 fr.addEventListener('pointerup', endDrag); fr.addEventListener('pointercancel', endDrag);
-fr.addEventListener('wheel', (e) => { e.preventDefault(); const k = e.deltaY < 0 ? 1.06 : 1 / 1.06, z = Math.max(minZoom(), Math.min(minZoom() * 8, t.z * k)), r = z / t.z; t.z = z; t.ox *= r; t.oy *= r; renderAll(); }, { passive: false });
+fr.addEventListener('wheel', (e) => { e.preventDefault(); const k = e.deltaY < 0 ? 1.06 : 1 / 1.06, z = Math.max(minZoom(), Math.min(coverZoom() * 8, t.z * k)), r = z / t.z; t.z = z; t.ox *= r; t.oy *= r; renderAll(); }, { passive: false });
 document.addEventListener('dragover', (e) => e.preventDefault());
 document.addEventListener('drop', (e) => { e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) setImage(f); });
 window.addEventListener('resize', () => { if (img) draw(); });
