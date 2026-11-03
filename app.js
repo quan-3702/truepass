@@ -8,7 +8,21 @@ let proAvailable = false; // Pro limits apply only when the Store actually sells
 proAvailable = true; // owner's rule: Pro is never free – free limits apply everywhere (website, Store, offline) until Pro is bought
 let proSku = PRO_SKU;
 let isPro = false;
-try { isPro = localStorage.getItem('truepass-pro') === '1'; } catch (_) {}
+// saved Pro flag: the website never trusts it (web visitors cannot buy there); the Store app trusts it for 30 days after the Store last confirmed the purchase
+const HAS_STORE = typeof window !== 'undefined' && 'getDigitalGoodsService' in window, PRO_OK_DAYS = 30;
+function cachedPro() {
+  try {
+    if (!HAS_STORE || localStorage.getItem('truepass-pro') !== '1') return false;
+    const ok = localStorage.getItem('truepass-pro-ok'), now = Date.now();
+    if (ok === null) { localStorage.setItem('truepass-pro-ok', String(now)); return true; } // saved by an older version: counts as confirmed now, once
+    const t = Number(ok);
+    return t > 0 && t <= now + 86400000 && now - t < PRO_OK_DAYS * 86400000; // a date in the future or garbage is not trusted
+  } catch (_) { return false; }
+}
+function storePro(owned) { // only when the Store really answered
+  try { if (owned) { localStorage.setItem('truepass-pro', '1'); localStorage.setItem('truepass-pro-ok', String(Date.now())); } else { localStorage.removeItem('truepass-pro'); localStorage.removeItem('truepass-pro-ok'); } } catch (_) {}
+}
+isPro = cachedPro();
 const unlocked = () => isPro || !proAvailable;
 
 async function billing() {
@@ -17,7 +31,6 @@ async function billing() {
 }
 function setPro(v) {
   isPro = v;
-  try { localStorage.setItem('truepass-pro', v ? '1' : '0'); } catch (_) {}
   const b = $('proBtn');
   b.textContent = v ? '★ Pro' : '★ Get Pro';
   b.classList.toggle('is-pro', v);
@@ -41,7 +54,7 @@ async function checkPro() {
     if (details[0]) { proSku = details[0].itemId; if (!PRO_IDS.includes(proSku)) PRO_IDS.push(proSku); }
     const list = await svc.listPurchases();
     const owned = list.some((p) => PRO_IDS.includes(p.itemId));
-    if (owned || details.length) { setPro(owned); return owned; }
+    if (owned || details.length) { storePro(owned); setPro(owned); return owned; }
     setPro(isPro); // Store did not answer (offline): keep what we knew
     return isPro;
   } catch (_) { return isPro; }
