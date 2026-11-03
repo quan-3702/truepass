@@ -1,4 +1,4 @@
-const CACHE = 'truepass-v8';
+const CACHE = 'truepass-v9';
 const ASSETS = ['./', 'index.html', 'help.html', 'help-1.jpg', 'help-2.jpg', 'style.css', 'app.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png', 'privacy.html'];
 
 self.addEventListener('install', (e) => {
