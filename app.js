@@ -5,7 +5,7 @@ const PRO_SKU = 'truepass_pro';
 const PRO_IDS = [PRO_SKU];
 let STORE_URL = 'https://apps.microsoft.com/detail/9NNMBXF2VJG5';
 let proAvailable = false; // Pro limits apply only when the Store actually sells the add-on
-try { if ('getDigitalGoodsService' in window && localStorage.getItem('truepass-proavail') === '1') proAvailable = true; } catch (_) {} // keep Pro limits when offline
+proAvailable = true; // owner's rule: Pro is never free – free limits apply everywhere (website, Store, offline) until Pro is bought
 let proSku = PRO_SKU;
 let isPro = false;
 try { isPro = localStorage.getItem('truepass-pro') === '1'; } catch (_) {}
@@ -38,7 +38,6 @@ async function checkPro() {
   if (!svc) return false;
   try {
     const details = await svc.getDetails(PRO_IDS).catch(() => []);
-    if (details.length) { proAvailable = true; try { localStorage.setItem('truepass-proavail', '1'); } catch (_) {} }
     if (details[0]) { proSku = details[0].itemId; if (!PRO_IDS.includes(proSku)) PRO_IDS.push(proSku); }
     const list = await svc.listPurchases();
     const owned = list.some((p) => PRO_IDS.includes(p.itemId));
@@ -58,6 +57,7 @@ async function openPro(reason) {
     $('restoreBtn').hidden = false;
     try {
       const [d] = await svc.getDetails([proSku]);
+      if (!d) proMessage((reason ? reason + ' ' : '') + 'Pro is being added to the Microsoft Store and will be on sale very soon – please check again in a day or two.');
       const price = d && d.price ? new Intl.NumberFormat(undefined, { style: 'currency', currency: d.price.currency }).format(Number(d.price.value)) : '';
       $('buyBtn').textContent = price ? `Unlock Pro – ${price}` : 'Unlock Pro';
     } catch (_) { $('buyBtn').textContent = 'Unlock Pro'; }
@@ -234,15 +234,29 @@ function download(blob, name) { const a = document.createElement('a'); a.href = 
 function viewSize() { const s = spec(), box = document.querySelector('.work'), H = Math.max(200, Math.min(box.clientHeight - 32, (box.clientWidth - 32) * s.h / s.w, 640)); return [Math.round(H * s.w / s.h), Math.round(H)]; }
 let raf = 0;
 function draw() { cancelAnimationFrame(raf); raf = requestAnimationFrame(drawNow); }
+// stamp a repeated "PREVIEW" over an on-screen canvas so a right-click "Save image" of a Pro
+// deliverable (print sheet, replaced background, custom size) is clearly not the paid output.
+function watermarkPreview(v, text) {
+  const x = v.getContext('2d');
+  x.save();
+  x.translate(v.width / 2, v.height / 2); x.rotate(-Math.PI / 6);
+  x.font = `bold ${Math.max(13, Math.round(v.width * 0.06))}px Segoe UI, Arial, sans-serif`;
+  x.fillStyle = 'rgba(37, 99, 235, 0.22)'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  const R = Math.round(Math.hypot(v.width, v.height)), stepY = Math.max(28, Math.round(v.width * 0.2)), stepX = Math.max(90, Math.round(v.width * 0.5));
+  for (let gy = -R; gy <= R; gy += stepY) for (let gx = -R; gx <= R; gx += stepX) x.fillText(text, gx, gy);
+  x.restore();
+}
 function drawNow() {
   if (!img) return;
   if (tab === 'sheet') {
     const { c, L } = renderSheet(4), v = $('sheetView'); v.width = c.width; v.height = c.height; v.getContext('2d').drawImage(c, 0, 0);
+    if (!unlocked()) watermarkPreview(v, 'PREVIEW');
     return;
   }
   const [W, H] = viewSize(), s = spec(), v = $('view'), dpr = Math.min(2, window.devicePixelRatio || 1);
   const c = renderPhoto(Math.round(W * dpr), Math.round(H * dpr));
   v.width = c.width; v.height = c.height; v.style.width = W + 'px'; v.style.height = H + 'px'; v.getContext('2d').drawImage(c, 0, 0);
+  if (!unlocked() && ((useCut && cut) || spec().custom)) watermarkPreview(v, 'PREVIEW');
   const k = H / s.h, top = s.top * k, c1 = (s.top + s.head[0]) * k, c2 = (s.top + s.head[1]) * k, g = $('guides');
   g.setAttribute('viewBox', `0 0 ${W} ${H}`);
   g.innerHTML = st.guides ? `<rect x="0" y="${c1}" width="${W}" height="${c2 - c1}" fill="#22c55e" fill-opacity=".28"/><line x1="0" y1="${c1}" x2="${W}" y2="${c1}" stroke="#16a34a" stroke-width="1.5"/><line x1="0" y1="${c2}" x2="${W}" y2="${c2}" stroke="#16a34a" stroke-width="1.5"/><line x1="0" y1="${top}" x2="${W}" y2="${top}" stroke="#2563eb" stroke-width="2"/><line x1="${W / 2}" y1="0" x2="${W / 2}" y2="${H}" stroke="#2563eb" stroke-width="1" stroke-dasharray="5 5" stroke-opacity=".7"/><ellipse cx="${W / 2}" cy="${(top + (c1 + c2) / 2) / 2}" rx="${((c1 + c2) / 2 - top) * 0.37}" ry="${((c1 + c2) / 2 - top) / 2}" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="6 5" stroke-opacity=".85"/><text x="6" y="${top - 5}" font-size="12" fill="#2563eb" font-family="Segoe UI, Arial" font-weight="700">top of hair</text><text x="6" y="${c2 - 5}" font-size="12" fill="#15803d" font-family="Segoe UI, Arial" font-weight="700">chin in this band</text>` : '';
