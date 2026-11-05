@@ -23,6 +23,7 @@
     </div>
     <div id="menu" class="menu" hidden>
       <button id="saveSheetBtn">Save the print sheet as a picture <span class="badge pro-only">PRO</span></button>
+      <button id="webMenuBtn">💻 Photo for an online form (pixels &amp; KB) <span class="badge pro-only">PRO</span></button>
       <button id="newBtn">Start over with another photo</button>
       <a href="help.html" target="_blank" rel="noopener">❓ How to use TruePass</a>
       <a href="mailto:thequan03072002@gmail.com?subject=TruePass%20feedback">✉ Feedback &amp; support</a>
@@ -75,16 +76,26 @@
       <button id="checkBtn" class="ghost">✓ Check my photo</button>
       <div id="checks" class="checks" hidden></div>
 
+      <h2>Online application</h2>
+      <button id="webBtn" class="ghost">💻 Photo for an online form <span class="badge pro-only">PRO</span></button>
+      <p class="hint">Visa and passport websites ask for exact pixels and a maximum file size (for example 240 KB). TruePass makes the JPG fit.</p>
+
       <h2>4 · Print sheet</h2>
       <div class="two">
         <label class="field">Paper<select id="paper"></select></label>
-        <label class="field">How many<select id="copies"><option value="0">Fill the page</option><option>2</option><option>4</option><option>6</option><option>8</option></select></label>
+        <label class="field"><span id="copiesLbl">How many</span><select id="copies"><option value="0">Fill the page</option><option>2</option><option>4</option><option>6</option><option>8</option></select></label>
       </div>
       <div class="two" id="paperF" hidden>
         <label class="field">Paper width (mm)<input id="pw" type="text" inputmode="decimal" maxlength="5"></label>
         <label class="field">Paper height (mm)<input id="ph" type="text" inputmode="decimal" maxlength="5"></label>
       </div>
       <p id="sheetLine" class="hint"></p>
+      <button id="addPersonBtn" class="ghost">➕ Add to a family sheet <span class="badge pro-only">PRO</span></button>
+      <div id="peopleBox" class="people-box" hidden>
+        <ul id="peopleList" class="people-list"></ul>
+        <button id="clearPeople" class="ghost small">Back to one person</button>
+      </div>
+      <p class="hint">Family sheet: line up each person's photo and add it – everybody prints together on one page, even with different photo sizes.</p>
       <p class="fb-note">💬 Something not working the way you want? Tell me – <a href="mailto:thequan03072002@gmail.com?subject=TruePass%20feedback">thequan03072002@gmail.com</a>. I read every message and improve the app.</p>
     </aside>
 
@@ -124,6 +135,8 @@
       <li><strong>Print sheets</strong> – many photos on one page, at the true size, with cut lines</li>
       <li><strong>Save the sheet as a picture</strong> to print at a photo kiosk or shop</li>
       <li><strong>Automatic background removal</strong> – a clean white, grey or blue background in one click</li>
+      <li><strong>Family sheets</strong> – up to 8 people (even different photo sizes) on one page</li>
+      <li><strong>Photos for online forms</strong> – the exact pixels and file size (KB) visa and passport websites ask for</li>
       <li><strong>Any paper size</strong> and <strong>any photo size</strong> you type in</li>
     </ul>
     <p class="fb-note">💬 Something not working the way you want? Tell me – <a href="mailto:thequan03072002@gmail.com?subject=TruePass%20feedback">thequan03072002@gmail.com</a>. I read every message and improve the app.</p>
@@ -132,6 +145,23 @@
       <button id="buyBtn" class="primary">Unlock Pro</button>
       <button id="restoreBtn" class="ghost">Restore purchase</button>
       <button id="closePro" class="ghost">Not now</button>
+    </div>
+  </dialog>
+
+  <dialog id="webDialog" class="dlg">
+    <h2>Photo for an online form</h2>
+    <p class="muted">Online visa and passport applications ask for a digital photo with set pixels and a maximum file size. TruePass makes the JPG fit – on this PC.</p>
+    <label class="field">The form<select id="webPreset"></select></label>
+    <div class="two" id="webF" hidden>
+      <label class="field">Longest side (pixels)<input id="webPx" type="text" inputmode="numeric" maxlength="4"></label>
+      <label class="field">Max file size (KB)<input id="webKb" type="text" inputmode="numeric" maxlength="5"></label>
+    </div>
+    <p id="webLine" class="hint"></p>
+    <p class="hint">Limits change – check the form you are filling in.</p>
+    <p id="webMsg" class="pro-msg" hidden></p>
+    <div class="row-btns">
+      <button id="webSave" class="primary">💾 Save for the form <span class="badge pro-only">PRO</span></button>
+      <button id="webClose" class="ghost">Close</button>
     </div>
   </dialog>
 
